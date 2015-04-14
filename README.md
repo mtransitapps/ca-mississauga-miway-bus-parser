@@ -1,2 +1,4 @@
-# ca-mississauga-miway-bus-parser
+ca-mississauga-miway-bus-parser
+===============================
+
 Parser for Mississauga MiWay Bus data
