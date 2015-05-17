@@ -114,13 +114,12 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
-		int directionId = gTrip.direction_id;
-		String stationName = cleanTripHeadsign(gTrip.trip_headsign);
-		mTrip.setHeadsignString(stationName, directionId);
+		mTrip.setHeadsignString(cleanTripHeadsign(gTrip.trip_headsign), gTrip.direction_id);
 	}
 
 	@Override
 	public String cleanTripHeadsign(String tripHeadsign) {
+		tripHeadsign = MSpec.cleanStreetTypes(tripHeadsign);
 		return MSpec.cleanLabel(tripHeadsign);
 	}
 
@@ -130,6 +129,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 	@Override
 	public String cleanStopName(String gStopName) {
 		gStopName = AT.matcher(gStopName).replaceAll(AT_REPLACEMENT);
+		gStopName = MSpec.cleanStreetTypes(gStopName);
 		gStopName = MSpec.cleanNumbers(gStopName);
 		return MSpec.cleanLabel(gStopName);
 	}
