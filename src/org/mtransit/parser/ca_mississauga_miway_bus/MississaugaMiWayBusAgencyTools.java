@@ -127,9 +127,13 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 	private static final Pattern AT = Pattern.compile("( at )", Pattern.CASE_INSENSITIVE);
 	private static final String AT_REPLACEMENT = " / ";
 
+	private static final Pattern PLATFORM = Pattern.compile("( platform )", Pattern.CASE_INSENSITIVE);
+	private static final String PLATFORM_REPLACEMENT = " P.";
+
 	@Override
 	public String cleanStopName(String gStopName) {
 		gStopName = AT.matcher(gStopName).replaceAll(AT_REPLACEMENT);
+		gStopName = PLATFORM.matcher(gStopName).replaceAll(PLATFORM_REPLACEMENT);
 		gStopName = MSpec.cleanStreetTypes(gStopName);
 		gStopName = MSpec.cleanNumbers(gStopName);
 		return MSpec.cleanLabel(gStopName);
