@@ -83,7 +83,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public String getRouteColor(GRoute gRoute) {
-		int routeId = Integer.parseInt(gRoute.route_id);
+		int routeId = Integer.parseInt(gRoute.getRouteId());
 		if (routeId >= 300 && routeId <= 399) { // School Routes
 			return COLOR_6F5F5E;
 		}
@@ -101,7 +101,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public void setTripHeadsign(MRoute mRoute, MTrip mTrip, GTrip gTrip, GSpec gtfs) {
-		String gTripHeadsignLC = gTrip.trip_headsign.toLowerCase(Locale.ENGLISH);
+		String gTripHeadsignLC = gTrip.getTripHeadsign().toLowerCase(Locale.ENGLISH);
 		if (gTripHeadsignLC.endsWith(NORTH) || gTripHeadsignLC.endsWith(NORTHBOUND)) {
 			mTrip.setHeadsignDirection(MDirectionType.NORTH);
 			return;
@@ -115,12 +115,13 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
-		mTrip.setHeadsignString(cleanTripHeadsign(gTrip.trip_headsign), gTrip.direction_id);
+		mTrip.setHeadsignString(cleanTripHeadsign(gTrip.getTripHeadsign()), gTrip.getDirectionId());
 	}
 
 	@Override
 	public String cleanTripHeadsign(String tripHeadsign) {
 		tripHeadsign = CleanUtils.cleanStreetTypes(tripHeadsign);
+		tripHeadsign = CleanUtils.cleanNumbers(tripHeadsign);
 		return CleanUtils.cleanLabel(tripHeadsign);
 	}
 
@@ -141,6 +142,6 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public String getStopCode(GStop gStop) {
-		return gStop.stop_id; // using stop ID as stop code
+		return gStop.getStopId(); // using stop ID as stop code
 	}
 }
