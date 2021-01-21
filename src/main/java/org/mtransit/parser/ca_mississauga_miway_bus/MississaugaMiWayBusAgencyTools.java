@@ -1,28 +1,32 @@
 package org.mtransit.parser.ca_mississauga_miway_bus;
 
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.regex.Pattern;
-
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.mtransit.parser.CleanUtils;
 import org.mtransit.parser.DefaultAgencyTools;
+import org.mtransit.parser.MTLog;
 import org.mtransit.parser.Utils;
 import org.mtransit.parser.gtfs.data.GCalendar;
 import org.mtransit.parser.gtfs.data.GCalendarDate;
 import org.mtransit.parser.gtfs.data.GRoute;
 import org.mtransit.parser.gtfs.data.GSpec;
-import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.gtfs.data.GTrip;
 import org.mtransit.parser.mt.data.MAgency;
 import org.mtransit.parser.mt.data.MDirectionType;
 import org.mtransit.parser.mt.data.MRoute;
-import org.mtransit.parser.CleanUtils;
 import org.mtransit.parser.mt.data.MTrip;
+
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
+import static org.mtransit.parser.StringUtils.EMPTY;
 
 // http://www.mississauga.ca/portal/miway/developerdownload
 // https://www.miapp.ca/GTFS/google_transit.zip
 public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
-	public static void main(String[] args) {
+	public static void main(@Nullable String[] args) {
 		if (args == null || args.length == 0) {
 			args = new String[3];
 			args[0] = "input/gtfs.zip";
@@ -32,46 +36,48 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 		new MississaugaMiWayBusAgencyTools().start(args);
 	}
 
-	private HashSet<String> serviceIds;
+	@Nullable
+	private HashSet<Integer> serviceIdInts;
 
 	@Override
-	public void start(String[] args) {
-		System.out.printf("\nGenerating Mississauga MiWay bus data...");
+	public void start(@NotNull String[] args) {
+		MTLog.log("Generating Mississauga MiWay bus data...");
 		long start = System.currentTimeMillis();
-		this.serviceIds = extractUsefulServiceIds(args, this);
+		this.serviceIdInts = extractUsefulServiceIdInts(args, this, true);
 		super.start(args);
-		System.out.printf("\nGenerating Mississauga MiWay bus data... DONE in %s.\n", Utils.getPrettyDuration(System.currentTimeMillis() - start));
+		MTLog.log("Generating Mississauga MiWay bus data... DONE in %s.", Utils.getPrettyDuration(System.currentTimeMillis() - start));
 	}
 
 	@Override
 	public boolean excludingAll() {
-		return this.serviceIds != null && this.serviceIds.isEmpty();
+		return this.serviceIdInts != null && this.serviceIdInts.isEmpty();
 	}
 
 	@Override
-	public boolean excludeCalendar(GCalendar gCalendar) {
-		if (this.serviceIds != null) {
-			return excludeUselessCalendar(gCalendar, this.serviceIds);
+	public boolean excludeCalendar(@NotNull GCalendar gCalendar) {
+		if (this.serviceIdInts != null) {
+			return excludeUselessCalendarInt(gCalendar, this.serviceIdInts);
 		}
 		return super.excludeCalendar(gCalendar);
 	}
 
 	@Override
-	public boolean excludeCalendarDate(GCalendarDate gCalendarDates) {
-		if (this.serviceIds != null) {
-			return excludeUselessCalendarDate(gCalendarDates, this.serviceIds);
+	public boolean excludeCalendarDate(@NotNull GCalendarDate gCalendarDates) {
+		if (this.serviceIdInts != null) {
+			return excludeUselessCalendarDateInt(gCalendarDates, this.serviceIdInts);
 		}
 		return super.excludeCalendarDate(gCalendarDates);
 	}
 
 	@Override
-	public boolean excludeTrip(GTrip gTrip) {
-		if (this.serviceIds != null) {
-			return excludeUselessTrip(gTrip, this.serviceIds);
+	public boolean excludeTrip(@NotNull GTrip gTrip) {
+		if (this.serviceIdInts != null) {
+			return excludeUselessTripInt(gTrip, this.serviceIdInts);
 		}
 		return super.excludeTrip(gTrip);
 	}
 
+	@NotNull
 	@Override
 	public Integer getAgencyRouteType() {
 		return MAgency.ROUTE_TYPE_BUS;
@@ -79,6 +85,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	private static final String AGENCY_COLOR = "D33517"; // ORANGE
 
+	@NotNull
 	@Override
 	public String getAgencyColor() {
 		return AGENCY_COLOR;
@@ -86,8 +93,10 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	private static final String COLOR_6F5F5E = "6F5F5E";
 
+	@Nullable
 	@Override
-	public String getRouteColor(GRoute gRoute) {
+	public String getRouteColor(@NotNull GRoute gRoute) {
+		//noinspection deprecation
 		int routeId = Integer.parseInt(gRoute.getRouteId());
 		if (routeId >= 300 && routeId <= 399) { // School Routes
 			return COLOR_6F5F5E;
@@ -95,55 +104,83 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 		return super.getRouteColor(gRoute);
 	}
 
-	private static final String WESTBOUND = "westbound";
-	private static final String WEST = "west";
-	private static final String EASTBOUND = "eastbound";
-	private static final String EAST = "east";
-	private static final String SOUTHBOUND = "southbound";
-	private static final String SOUTH = "south";
-	private static final String NORTHBOUND = "northbound";
-	private static final String NORTH = "north";
-
 	@Override
-	public void setTripHeadsign(MRoute mRoute, MTrip mTrip, GTrip gTrip, GSpec gtfs) {
-		String gTripHeadsignLC = gTrip.getTripHeadsign().toLowerCase(Locale.ENGLISH);
-		if (gTripHeadsignLC.endsWith(NORTH) || gTripHeadsignLC.endsWith(NORTHBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.NORTH);
-			return;
-		} else if (gTripHeadsignLC.endsWith(SOUTH) || gTripHeadsignLC.endsWith(SOUTHBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.SOUTH);
-			return;
-		} else if (gTripHeadsignLC.endsWith(EAST) || gTripHeadsignLC.endsWith(EASTBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.EAST);
-			return;
-		} else if (gTripHeadsignLC.endsWith(WEST) || gTripHeadsignLC.endsWith(WESTBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.WEST);
-			return;
-		}
-		mTrip.setHeadsignString(cleanTripHeadsign(gTrip.getTripHeadsign()), gTrip.getDirectionId());
+	public void setTripHeadsign(@NotNull MRoute mRoute, @NotNull MTrip mTrip, @NotNull GTrip gTrip, @NotNull GSpec gtfs) {
+		mTrip.setHeadsignString(
+				cleanTripHeadsign(gTrip.getTripHeadsignOrDefault()),
+				gTrip.getDirectionIdOrDefault()
+		);
 	}
 
 	@Override
-	public String cleanTripHeadsign(String tripHeadsign) {
-		tripHeadsign = CleanUtils.cleanStreetTypes(tripHeadsign);
-		tripHeadsign = CleanUtils.cleanNumbers(tripHeadsign);
-		return CleanUtils.cleanLabel(tripHeadsign);
+	public boolean directionFinderEnabled() {
+		return true;
+	}
+
+	@Override
+	public int getDirectionType() {
+		return MTrip.HEADSIGN_TYPE_DIRECTION;
+	}
+
+	@NotNull
+	@Override
+	public String cleanDirectionHeadsign(boolean fromStopName, @NotNull String directionHeadSign) {
+		directionHeadSign = cleanHeadSign(directionHeadSign);
+		return directionHeadSign; // keep original head-sign bounds for convert to direction E/W/N/S
+	}
+
+	@Nullable
+	@Override
+	public MDirectionType convertDirection(@Nullable String headSign) {
+		if (headSign != null) {
+			if (getDirectionType() == MTrip.HEADSIGN_TYPE_DIRECTION) {
+				final String tripHeadsignLC = headSign.toLowerCase(Locale.ENGLISH);
+				switch (tripHeadsignLC) {
+				case "eastbound":
+					return MDirectionType.EAST;
+				case "westbound":
+					return MDirectionType.WEST;
+				case "northbound":
+					return MDirectionType.NORTH;
+				case "southbound":
+					return MDirectionType.SOUTH;
+				case "cw":
+					return null;
+				default:
+					throw new MTLog.Fatal("Unexpected direction for '%s'!", headSign);
+				}
+			}
+		}
+		return null;
+	}
+
+	private static final Pattern REMOVE_BOUNDS_ = CleanUtils.cleanWords("eastbound", "westbound", "northbound", "southbound");
+
+	@NotNull
+	@Override
+	public String cleanTripHeadsign(@NotNull String tripHeadsign) {
+		tripHeadsign = REMOVE_BOUNDS_.matcher(tripHeadsign).replaceAll(EMPTY); // bounds used for direction
+		return cleanHeadSign(tripHeadsign);
+	}
+
+	@NotNull
+	private String cleanHeadSign(@NotNull String headSign) {
+		headSign = CleanUtils.cleanStreetTypes(headSign);
+		headSign = CleanUtils.cleanNumbers(headSign);
+		return CleanUtils.cleanLabel(headSign);
 	}
 
 	private static final Pattern PLATFORM = Pattern.compile("( platform )", Pattern.CASE_INSENSITIVE);
 	private static final String PLATFORM_REPLACEMENT = " P.";
 
+	@NotNull
 	@Override
-	public String cleanStopName(String gStopName) {
+	public String cleanStopName(@NotNull String gStopName) {
+		gStopName = CleanUtils.cleanBounds(gStopName);
 		gStopName = CleanUtils.CLEAN_AT.matcher(gStopName).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		gStopName = PLATFORM.matcher(gStopName).replaceAll(PLATFORM_REPLACEMENT);
 		gStopName = CleanUtils.cleanStreetTypes(gStopName);
 		gStopName = CleanUtils.cleanNumbers(gStopName);
 		return CleanUtils.cleanLabel(gStopName);
-	}
-
-	@Override
-	public String getStopCode(GStop gStop) {
-		return gStop.getStopId(); // using stop ID as stop code
 	}
 }
