@@ -171,7 +171,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	private static final Pattern PLATFORM = Pattern.compile("( platform )", Pattern.CASE_INSENSITIVE);
-	private static final String PLATFORM_REPLACEMENT = " P.";
+	private static final String PLATFORM_REPLACEMENT = " P ";
 
 	@NotNull
 	@Override
