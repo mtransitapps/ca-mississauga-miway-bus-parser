@@ -170,15 +170,11 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 		return CleanUtils.cleanLabel(headSign);
 	}
 
-	private static final Pattern PLATFORM = Pattern.compile("( platform )", Pattern.CASE_INSENSITIVE);
-	private static final String PLATFORM_REPLACEMENT = " P ";
-
 	@NotNull
 	@Override
 	public String cleanStopName(@NotNull String gStopName) {
 		gStopName = CleanUtils.cleanBounds(gStopName);
 		gStopName = CleanUtils.CLEAN_AT.matcher(gStopName).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
-		gStopName = PLATFORM.matcher(gStopName).replaceAll(PLATFORM_REPLACEMENT);
 		gStopName = CleanUtils.cleanStreetTypes(gStopName);
 		gStopName = CleanUtils.cleanNumbers(gStopName);
 		return CleanUtils.cleanLabel(gStopName);
