@@ -6,6 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mtransit.commons.CleanUtils;
 import org.mtransit.parser.DefaultAgencyTools;
+import org.mtransit.parser.gtfs.data.GRoute;
+import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.mt.data.MAgency;
 import org.mtransit.parser.mt.data.MTrip;
 
@@ -15,7 +17,6 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 // http://www.mississauga.ca/portal/miway/developerdownload
-// https://www.miapp.ca/GTFS/google_transit.zip
 public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	public static void main(@NotNull String[] args) {
@@ -57,7 +58,12 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public boolean useRouteShortNameForRouteId() {
-		return true;
+		return false; // used for GTFS-RT
+	}
+
+	@Override
+	public long getRouteId(@NotNull GRoute gRoute) {
+		return super.getRouteId(gRoute); // used for GTFS-RT
 	}
 
 	@Override
@@ -81,7 +87,7 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 
 	@NotNull
 	@Override
-	public String cleanDirectionHeadsign(boolean fromStopName, @NotNull String directionHeadSign) {
+	public String cleanDirectionHeadsign(int directionId, boolean fromStopName, @NotNull String directionHeadSign) {
 		directionHeadSign = cleanHeadSign(directionHeadSign);
 		return directionHeadSign; // keep original head-sign bounds for convert to direction E/W/N/S
 	}
@@ -110,5 +116,10 @@ public class MississaugaMiWayBusAgencyTools extends DefaultAgencyTools {
 		gStopName = CleanUtils.cleanStreetTypes(gStopName);
 		gStopName = CleanUtils.cleanNumbers(gStopName);
 		return CleanUtils.cleanLabel(gStopName);
+	}
+
+	@Override
+	public int getStopId(@NotNull GStop gStop) {
+		return super.getStopId(gStop); // used for GTFS-RT
 	}
 }
